@@ -2,8 +2,8 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WazBotz</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://jsdelivr.net"></script>
+<script src="https://cloudflare.com"></script>
 <style>
 :root{--ink:#0A0A0A;--mute:#5E5E5E;--acc:#FFD400;--pop:#FF2D87;--bg:#F7F7F2}
 *{box-sizing:border-box}
@@ -32,15 +32,12 @@ button.pop{background:var(--pop);color:#fff;border:2px solid var(--ink);box-shad
 </style></head><body>
 <nav id="nav"></nav><main id="app">Loading…</main>
 <script>
-// 1) Paste your two values from Supabase > Project Settings > API
-const SUPABASE_URL='https://tjyttcherigsvihrbmjy.supabase.co';
+const SUPABASE_URL='https://supabase.co';
 const SUPABASE_KEY='sb_publishable_nRBg4kEv4joY5JKVGorzdg_BP24Pev7';
 
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-// 2) After you set up Cloudflare R2 (see R2-SETUP.md), paste your Worker URL here.
-//    Leave '' until then — uploads automatically use Supabase (10 MB cap).
 const R2_WORKER='';
-const $=id=>document.getElementById(id);
+const \$=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clean=h=>DOMPurify.sanitize(h,{ADD_ATTR:['target']});
 const fmt=d=>new Date(d).toLocaleDateString();
@@ -50,16 +47,16 @@ const canWrite=()=>me&&(me.role==='writer'||me.role==='admin');
 async function setUser(session){
   me=null;
   if(session){const {data}=await db.from('profiles').select('*').eq('id',session.user.id).single();me=data;}
-  $('nav').innerHTML='<a class="logo" href="#/">WazBotz</a>'+
+  \$('nav').innerHTML='<a class="logo" href="#/">WazBotz</a>'+
     (canWrite()?'<a href="#/mine">My posts</a><a href="#/write">Write</a>':'')+
     (me?.role==='admin'?'<a href="#/admin">Admin</a>':'')+
     (me?`<span class="mute">${esc(me.name)}</span><a href="#" id="out">Log out</a>`:'<a href="#/login">Log in</a>');
-  if($('out'))$('out').onclick=async e=>{e.preventDefault();await db.auth.signOut();location.hash='#/'};
+  if(('out'))('out').onclick=async e=>{e.preventDefault();await db.auth.signOut();location.hash='#/'};
 }
 
 async function route(){
   const [,page,id]=location.hash.split('/');
-  const a=$('app');
+  const a=\$('app');
   if(page==='login')return login();
   if(page==='post')return view(id);
   if(page==='write')return canWrite()?write(id):(a.innerHTML='<h2>Writers only</h2><p>Ask the team leader to approve your email.</p>');
@@ -70,99 +67,93 @@ async function route(){
 
 async function home(){
   const {data}=await db.from('posts').select('id,title,author_name,created_at').eq('published',true).order('created_at',{ascending:false});
-  $('app').innerHTML='<h1>Latest posts</h1>'+(data?.length?data.map(p=>`<a class="card" href="#/post/${p.id}"><b>${esc(p.title)}</b><br><small>${esc(p.author_name)} · ${fmt(p.created_at)}</small></a>`).join(''):'<p class="mute">Nothing posted yet.</p>');
+  \$('app').innerHTML='<h1>Latest posts</h1>'+(data?.length?data.map(p=>`<a class="card" href="#/post/${p.id}"><b>${esc(p.title)}</b><br><small>${esc(p.author_name)} · ${fmt(p.created_at)}</small></a>`).join(''):'<p class="mute">Nothing posted yet.</p>');
 }
 
 async function view(id){
   const {data:p}=await db.from('posts').select('*').eq('id',id).single();
-  if(!p)return $('app').innerHTML='<p>Post not found.</p>';
+  if(!p)return \$('app').innerHTML='<p>Post not found.</p>';
   const mine=me&&(me.id===p.author_id||me.role==='admin');
-  $('app').innerHTML=`<h1>${esc(p.title)}</h1><p class="mute">By ${esc(p.author_name)} · ${fmt(p.created_at)}${p.published?'':' · <b>Draft</b>'}</p>
-  <div class="body">${clean(p.body)}</div>${mine?`<p><a href="#/write/${p.id}"><button class="alt">Edit</button></a></p>`:''}`;
+  \$('app').innerHTML=`<h1>${esc(p.title)}</h1><p class="mute">By ${esc(p.author_name)} · ${fmt(p.created_at)}${p.published?'':' · <b>Draft</b>'}</p>
+  <div class="body">${clean(p.body)}</div>${mine?`<p><a href="#/write/\${p.id}"><button class="alt">Edit</button></a></p>`:''}`;
 }
 
 async function mine(){
   const {data}=await db.from('posts').select('id,title,published,created_at').eq('author_id',me.id).order('created_at',{ascending:false});
-  $('app').innerHTML='<h1>My posts</h1><p><a href="#/write"><button>New post</button></a></p>'+(data||[]).map(p=>`<a class="card" href="#/write/${p.id}"><b>${esc(p.title)}</b> <small>${p.published?'Published':'Draft'} · ${fmt(p.created_at)}</small></a>`).join('');
+  \$('app').innerHTML='<h1>My posts</h1><p><a href="#/write"><button>New post</button></a></p>'+(data||[]).map(p=>`<a class="card" href="#/write/${p.id}"><b>${esc(p.title)}</b> <small>${p.published?'Published':'Draft'} · ${fmt(p.created_at)}</small></a>`).join('');
 }
 
 async function write(id){
   let p={title:'',body:'',published:false};
   if(id){const {data}=await db.from('posts').select('*').eq('id',id).single();if(data)p=data;}
-  const cmd=(c,v)=>`onclick="document.execCommand('${c}',false,${v?`'${v}'`:'null'});$('ed').focus()"`;
-  $('app').innerHTML=`<h1>${id?'Edit post':'New post'}</h1>
+  const cmd=(c,v)=>`onclick="document.execCommand('${c}',false,${v?`'\${v}'`:'null'});$('ed').focus()"`;
+  \$('app').innerHTML=`<h1>${id?'Edit post':'New post'}</h1>
   <input id="t" placeholder="Title" value="${esc(p.title)}">
   <div class="bar"><button class="alt" ${cmd('bold')}>Bold</button><button class="alt" ${cmd('formatBlock','h2')}>Heading</button><button class="alt" ${cmd('formatBlock','p')}>Text</button><button class="alt" ${cmd('insertUnorderedList')}>List</button>
   <button class="alt" onclick="const u=prompt('Link address');if(u)document.execCommand('createLink',false,u)">Link</button>
   <button class="alt" id="ui">Add image</button><button class="alt" id="uf">Add PDF</button><button class="alt" id="ua">Add file (any type)</button><input type="file" id="fi" hidden></div>
   <div id="ed" contenteditable="true">${clean(p.body)}</div>
   <div class="bar" style="margin-top:12px"><button class="alt" id="sd">Save draft</button><button class="pop" id="pb">Publish</button>${id?'<button class="alt" id="del">Delete</button>':''}</div><p id="m" class="msg"></p>`;
+  
   const save=async pub=>{
-    const row={title:$('t').value.trim()||'Untitled',body:clean($('ed').innerHTML),published:pub};
+    const row={title:('t').value.trim()||'Untitled',body:clean(('ed').innerHTML),published:pub};
     const r=id?await db.from('posts').update(row).eq('id',id).select().single():await db.from('posts').insert({...row,author_id:me.id,author_name:me.name}).select().single();
-    if(r.error)return $('m').textContent=r.error.message;
+    if(r.error)return \$('m').textContent=r.error.message;
     location.hash=pub?'#/post/'+r.data.id:'#/mine';
   };
+  
   let saved=null;
-  const keep=()=>{const s=getSelection();if(s.rangeCount&&$('ed').contains(s.anchorNode))saved=s.getRangeAt(0)};
-  ['keyup','mouseup','blur'].forEach(e=>$('ed').addEventListener(e,keep));
-  const pick=a=>{$('fi').accept=a;$('fi').click()};
-  $('ui').onclick=()=>pick('image/*');$('uf').onclick=()=>pick('application/pdf');
-  $('ua').onclick=()=>{$('fi').removeAttribute('accept');$('fi').click()};
-  $('fi').onchange=async()=>{
-    const f=$('fi').files[0];if(!f)return;
-    if(f.size>10*1024*1024)return $('m').textContent='File too large — 10 MB max.';
-    $('m').textContent='Uploading…';
+  const keep=()=>{const s=getSelection();if(s.rangeCount&&\(('ed').contains(s.anchorNode))saved=s.getRangeAt(0)};   ['keyup','mouseup','blur'].forEach(e=>\)('ed').addEventListener(e,keep));
+  
+  const pick=a=>{('fi').accept=a;('fi').click()};
+  \(('ui').onclick=()=>pick('image/*');\)('uf').onclick=()=>pick('application/pdf');
+  ('ua').onclick=()=>('fi').removeAttribute('accept');\(('fi').click()};\)('fi').onchange=async()=>{
+    const f=\$('fi').files[0];
+    if(!f)return;
+    if(f.size>10*1024*1024)return \(('m').textContent='File too large — 10 MB max.';\)('m').textContent='Uploading…';
+    
     const path=`${me.id}/${Date.now()}-${f.name.replace(/[^\w.-]/g,'_')}`;
-    let url=null;
-    if(R2_WORKER){
-      const r=await fetch(`${R2_WORKER}?name=${encodeURIComponent(f.name)}`,{method:'POST',headers:{Authorization:`Bearer ${(await db.auth.getSession()).data.session.access_token}`,'Content-Type':f.type||'application/octet-stream'},body:f});
-      const j=await r.json().catch(()=>({}));
-      if(!r.ok)return $('m').textContent=j.error||'Upload failed.';
-      url=j.url;
-    }else{
-      const {error}=await db.storage.from('uploads').upload(path,f);
-      if(error)return $('m').textContent=error.message;
-      url=db.storage.from('uploads').getPublicUrl(path).data.publicUrl;
+    
+    const { data, error } = await db.storage
+      .from('files')
+      .upload(path, f, { cacheControl: '3600', upsert: true });
+
+    if(error){
+      \$('m').textContent='Upload failed: '+error.message;
+      return;
     }
-    $('m').textContent='';$('ed').focus();
-    if(saved){const s=getSelection();s.removeAllRanges();s.addRange(saved)}
-    document.execCommand('insertHTML',false,f.type.startsWith('image/')?`<img src="${url}" alt="${esc(f.name)}"><p></p>`:`<p><a href="${url}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a></p>`);
-    $('fi').value='';
+
+    const { data: urlData } = db.storage.from('files').getPublicUrl(path);
+    const url = urlData.publicUrl;
+
+    \$('ed').focus();
+    if(saved){
+      const s=getSelection();
+      s.removeAllRanges();
+      s.addRange(saved);
+    }
+    
+    if(f.type.startsWith('image/')){
+      document.execCommand('insertImage',false,url);
+    }else{
+      document.execCommand('createLink',false,url);
+      document.execCommand('insertHTML',false,` (Attached Document: ${esc(f.name)})`);
+    }
+    \$('m').textContent='Uploaded successfully!';
   };
-  $('sd').onclick=()=>save(false);$('pb').onclick=()=>save(true);
-  if($('del'))$('del').onclick=async()=>{
-    if(!confirm('Delete this post? Its uploaded files will also be removed.'))return;
-    // delete files this post embedded from Supabase storage (own files, or any if admin)
-    const re=/https:\/\/[^"'<>()\\s]+\/storage\/v1\/object\/public\/uploads\/([^"'<>()\\s]+)/g;
-    let m;const paths=[];
-    while((m=re.exec(p.body||'')))paths.push(decodeURIComponent(m[1]));
-    const del=[...new Set(paths)].filter(pt=>me.role==='admin'||pt.split('/')[0]===me.id);
-    if(del.length)await db.storage.from('uploads').remove(del);
-    await db.from('posts').delete().eq('id',id);
-    location.hash='#/mine';
+
+  \(('sd').onclick=()=>save(false);\)('pb').onclick=()=>save(true);
+  
+  if(('del'))('del').onclick=async()=>{
+    if(confirm('Delete this post?')){
+      await db.from('posts').delete().eq('id',id);
+      location.hash='#/mine';
+    }
   };
 }
 
-async function admin(){
-  const {data}=await db.from('allowed_writers').select('email').order('email');
-  $('app').innerHTML=`<h1>Approved writers</h1><p class="mute">Add an email and that person becomes a writer as soon as they have an account.</p>
-  <div class="bar"><input id="e" type="email" placeholder="friend@email.com" style="flex:1;margin:0"><button id="add">Approve</button></div><p id="m" class="msg"></p>
-  ${(data||[]).map(r=>`<div class="card">${esc(r.email)} <button class="alt" style="float:right" data-e="${esc(r.email)}">Remove</button></div>`).join('')||'<p class="mute">No one yet.</p>'}`;
-  $('add').onclick=async()=>{const e=$('e').value.trim().toLowerCase();if(!e)return;const {error}=await db.from('allowed_writers').insert({email:e});error?$('m').textContent=error.message:admin()};
-  document.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{await db.from('allowed_writers').delete().eq('email',b.dataset.e);admin()});
-}
-
-function login(){
-  $('app').innerHTML=`<h1>Log in or sign up</h1><input id="n" placeholder="Your name (for signing up)"><input id="em" type="email" placeholder="Email"><input id="pw" type="password" placeholder="Password (6+ characters)">
-  <div class="bar"><button id="li">Log in</button><button class="alt" id="su">Create account</button></div><p id="m" class="msg"></p>`;
-  $('li').onclick=async()=>{const {error}=await db.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});error?$('m').textContent=error.message:location.hash='#/'};
-  $('su').onclick=async()=>{const {error,data}=await db.auth.signUp({email:$('em').value.trim(),password:$('pw').value,options:{data:{name:$('n').value.trim()}}});
-    if(error)return $('m').textContent=error.message;
-    $('m').style.color='#0A0A0A';$('m').textContent=data.session?'Account created!':'Check your email and click the confirm link, then log in.';};
-}
-
-db.auth.onAuthStateChange((_e,s)=>setUser(s).then(route));
-window.addEventListener('hashchange',route);
-db.auth.getSession().then(({data})=>setUser(data.session).then(route));
-</script></body></html>
+db.auth.onAuthStateChange((ev,ses)=>{setUser(ses);route()});
+window.onhashchange=route;
+</script>
+</body>
+</html>

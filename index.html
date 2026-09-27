@@ -36,7 +36,6 @@ const SUPABASE_URL='https://supabase.co';
 const SUPABASE_KEY='sb_publishable_nRBg4kEv4joY5JKVGorzdg_BP24Pev7';
 
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const R2_WORKER='';
 const \$=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clean=h=>DOMPurify.sanitize(h,{ADD_ATTR:['target']});
@@ -46,7 +45,12 @@ const canWrite=()=>me&&(me.role==='writer'||me.role==='admin');
 
 async function setUser(session){
   me=null;
-  if(session){const {data}=await db.from('profiles').select('*').eq('id',session.user.id).single();me=data;}
+  if(session){
+    try {
+      const {data}=await db.from('profiles').select('*').eq('id',session.user.id).single();
+      me=data;
+    } catch(e) { console.log(e); }
+  }
   \$('nav').innerHTML='<a class="logo" href="#/">WazBotz</a>'+
     (canWrite()?'<a href="#/mine">My posts</a><a href="#/write">Write</a>':'')+
     (me?.role==='admin'?'<a href="#/admin">Admin</a>':'')+
@@ -57,11 +61,11 @@ async function setUser(session){
 async function route(){
   const [,page,id]=location.hash.split('/');
   const a=\$('app');
-  if(page==='login')return login();
-  if(page==='post')return view(id);
-  if(page==='write')return canWrite()?write(id):(a.innerHTML='<h2>Writers only</h2><p>Ask the team leader to approve your email.</p>');
-  if(page==='mine')return canWrite()?mine():(a.innerHTML='<p>Writers only.</p>');
-  if(page==='admin')return me?.role==='admin'?admin():(a.innerHTML='<p>Admins only.</p>');
+  if(page=='login')return login();
+  if(page=='post')return view(id);
+  if(page=='write')return canWrite()?write(id):(a.innerHTML='<h2>Writers only</h2><p>Ask the team leader to approve your email.</p>');
+  if(page=='mine')return canWrite()?mine():(a.innerHTML='<p>Writers only.</p>');
+  if(page=='admin')return me?.role==='admin'?admin():(a.innerHTML='<p>Admins only.</p>');
   home();
 }
 
@@ -106,7 +110,7 @@ async function write(id){
   const keep=()=>{const s=getSelection();if(s.rangeCount&&\(('ed').contains(s.anchorNode))saved=s.getRangeAt(0)};   ['keyup','mouseup','blur'].forEach(e=>\)('ed').addEventListener(e,keep));
   
   const pick=a=>{('fi').accept=a;('fi').click()};
-  \(('ui').onclick=()=>pick('image/*');\)('uf').onclick=()=>pick('application/pdf');
+  ('ui').onclick=()=>pick('image/*');('uf').onclick=()=>pick('application/pdf');
   ('ua').onclick=()=>('fi').removeAttribute('accept');\(('fi').click()};\)('fi').onchange=async()=>{
     const f=\$('fi').files[0];
     if(!f)return;
@@ -142,7 +146,7 @@ async function write(id){
     \$('m').textContent='Uploaded successfully!';
   };
 
-  \(('sd').onclick=()=>save(false);\)('pb').onclick=()=>save(true);
+  ('sd').onclick=()=>save(false);('pb').onclick=()=>save(true);
   
   if(('del'))('del').onclick=async()=>{
     if(confirm('Delete this post?')){
@@ -152,8 +156,14 @@ async function write(id){
   };
 }
 
-db.auth.onAuthStateChange((ev,ses)=>{setUser(ses);route()});
-window.onhashchange=route;
+// Fixed listener sync loop causing freeze
+db.auth.getSession().then(({data:{session}})=>{
+  setUser(session).then(()=>{
+    route();
+    db.auth.onAuthStateChange((ev,ses)=>{setUser(ses).then(()=>route())});
+    window.onhashchange=route;
+  });
+});
 </script>
 </body>
 </html>

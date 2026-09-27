@@ -40,6 +40,8 @@ button.pop{background:var(--pop);color:#fff;border:2px solid var(--ink);box-shad
 const SUPABASE_URL='https://tjyttcherigsvihrbmjy.supabase.co';
 const SUPABASE_KEY='sb_publishable_nRBg4kEv4joY5JKVGorzdg_BP24Pev7';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const CLOUDINARY_CLOUD='dhvayjc5';
+const CLOUDINARY_PRESET='wazbotz';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clean=h=>DOMPurify.sanitize(h,{ADD_ATTR:['target']});
@@ -87,7 +89,7 @@ $('m').textContent=error?('Error: '+error.message):'Account created! Check your 
 
 async function admin(){
 $('app').innerHTML='<h1>Admin</h1><p class="mute">Loading users…</p>';
-const {data,error}=await db.from('profiles').select('*').order('created_at',{ascending:false});
+const {data,error}=await db.from('profiles').select('*');
 if(error)return $('app').innerHTML='<p class="msg">'+esc(error.message)+'</p>';
 $('app').innerHTML='<h1>Admin</h1>'+(data||[]).map(u=>`
 <div class="card">
@@ -169,16 +171,21 @@ const f=$('fi').files[0];
 if(!f) return;
 if(f.size>10*1024*1024){$('m').textContent='File too large — 10 MB max.';return;}
 $('m').textContent='Uploading…';
-const path=`${me.id}/${Date.now()}-${f.name.replace(/[^\w.-]/g,'_')}`;
-const { data, error } = await db.storage
-.from('files')
-.upload(path, f, { cacheControl: '3600', upsert: true });
-if(error){
-$('m').textContent='Upload failed: '+error.message;
+const fd=new FormData();
+fd.append('file',f);
+fd.append('upload_preset',CLOUDINARY_PRESET);
+fd.append('folder','wazbotz/'+me.id);
+const resourceType=f.type.startsWith('image/')?'image':'raw';
+let url;
+try{
+const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`,{method:'POST',body:fd});
+const data=await res.json();
+if(!res.ok||!data.secure_url)throw new Error(data.error?.message||'Upload failed');
+url=data.secure_url;
+}catch(e){
+$('m').textContent='Upload failed: '+e.message;
 return;
 }
-const { data: urlData } = db.storage.from('files').getPublicUrl(path);
-const url = urlData.publicUrl;
 $('ed').focus();
 if(saved){
 const s=getSelection();

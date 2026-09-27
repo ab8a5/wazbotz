@@ -64,16 +64,24 @@ if($('out'))$('out').onclick=async e=>{e.preventDefault();await db.auth.signOut(
 
 async function login(){
 $('app').innerHTML=`<h1>Log in</h1>
-<p class="mute">Enter your email — we'll send you a magic link, no password needed.</p>
-<input id="em" type="email" placeholder="you@example.com">
-<button id="sendLink">Send login link</button>
+<input id="em" type="email" placeholder="Email">
+<input id="pw" type="password" placeholder="Password">
+<div class="bar"><button id="doLogin">Log in</button><button class="alt" id="doSignup">Create account</button></div>
 <p id="m" class="msg"></p>`;
-$('sendLink').onclick=async()=>{
-const email=$('em').value.trim();
-if(!email)return $('m').textContent='Enter an email address.';
-$('m').textContent='Sending…';
-const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
-$('m').textContent=error?('Error: '+error.message):'Check your email for the login link!';
+$('doLogin').onclick=async()=>{
+const email=$('em').value.trim(),password=$('pw').value;
+if(!email||!password)return $('m').textContent='Enter email and password.';
+$('m').textContent='Logging in…';
+const {error}=await db.auth.signInWithPassword({email,password});
+if(error)$('m').textContent='Error: '+error.message;
+};
+$('doSignup').onclick=async()=>{
+const email=$('em').value.trim(),password=$('pw').value;
+if(!email||!password)return $('m').textContent='Enter email and password.';
+if(password.length<6)return $('m').textContent='Password must be at least 6 characters.';
+$('m').textContent='Creating account…';
+const {error}=await db.auth.signUp({email,password});
+$('m').textContent=error?('Error: '+error.message):'Account created! Check your email to confirm, then log in.';
 };
 }
 

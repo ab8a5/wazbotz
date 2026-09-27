@@ -62,6 +62,44 @@ $('nav').innerHTML='<a class="logo" href="#/">WazBotz</a>'+
 if($('out'))$('out').onclick=async e=>{e.preventDefault();await db.auth.signOut();location.hash='#/'};
 }
 
+async function login(){
+$('app').innerHTML=`<h1>Log in</h1>
+<p class="mute">Enter your email — we'll send you a magic link, no password needed.</p>
+<input id="em" type="email" placeholder="you@example.com">
+<button id="sendLink">Send login link</button>
+<p id="m" class="msg"></p>`;
+$('sendLink').onclick=async()=>{
+const email=$('em').value.trim();
+if(!email)return $('m').textContent='Enter an email address.';
+$('m').textContent='Sending…';
+const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+$('m').textContent=error?('Error: '+error.message):'Check your email for the login link!';
+};
+}
+
+async function admin(){
+$('app').innerHTML='<h1>Admin</h1><p class="mute">Loading users…</p>';
+const {data,error}=await db.from('profiles').select('*').order('created_at',{ascending:false});
+if(error)return $('app').innerHTML='<p class="msg">'+esc(error.message)+'</p>';
+$('app').innerHTML='<h1>Admin</h1>'+(data||[]).map(u=>`
+<div class="card">
+<b>${esc(u.name||u.email||u.id)}</b> <small class="mute">${esc(u.email||'')}</small><br>
+<label>Role:
+<select data-id="${u.id}" class="roleSel">
+<option value="reader" ${u.role==='reader'||!u.role?'selected':''}>Reader</option>
+<option value="writer" ${u.role==='writer'?'selected':''}>Writer</option>
+<option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+</select>
+</label>
+</div>`).join('');
+document.querySelectorAll('.roleSel').forEach(sel=>{
+sel.onchange=async()=>{
+const {error}=await db.from('profiles').update({role:sel.value}).eq('id',sel.dataset.id);
+if(error)alert('Failed to update role: '+error.message);
+};
+});
+}
+
 async function route(){
 const [,page,id]=location.hash.split('/');
 const a=$('app');

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WazBotz</title>
 <script src="https://jsdelivr.net"></script>
 <script src="https://cloudflare.com"></script>
@@ -29,15 +31,18 @@ button.pop{background:var(--pop);color:#fff;border:2px solid var(--ink);box-shad
 #ed{min-height:300px;background:#fff;border:2px solid var(--ink);border-radius:0;padding:12px}
 .body img,#ed img{max-width:100%;height:auto}
 .msg{color:#C4005F;font-weight:700}
-</style></head><body>
-<nav id="nav"></nav><main id="app">Loading…</main>
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<main id="app">Loading…</main>
 <script>
 const SUPABASE_URL='https://supabase.co';
 const SUPABASE_KEY='sb_publishable_nRBg4kEv4joY5JKVGorzdg_BP24Pev7';
 
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const \$=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'",'&#39;'}[c]));
 const clean=h=>DOMPurify.sanitize(h,{ADD_ATTR:['target']});
 const fmt=d=>new Date(d).toLocaleDateString();
 let me=null;
@@ -55,17 +60,17 @@ async function setUser(session){
     (canWrite()?'<a href="#/mine">My posts</a><a href="#/write">Write</a>':'')+
     (me?.role==='admin'?'<a href="#/admin">Admin</a>':'')+
     (me?`<span class="mute">${esc(me.name)}</span><a href="#" id="out">Log out</a>`:'<a href="#/login">Log in</a>');
-  if(('out'))('out').onclick=async e=>{e.preventDefault();await db.auth.signOut();location.hash='#/'};
+  if(\(('out'))\)('out').onclick=async e=>{e.preventDefault();await db.auth.signOut();location.hash='#/'};
 }
 
 async function route(){
   const [,page,id]=location.hash.split('/');
   const a=\$('app');
-  if(page=='login')return login();
-  if(page=='post')return view(id);
-  if(page=='write')return canWrite()?write(id):(a.innerHTML='<h2>Writers only</h2><p>Ask the team leader to approve your email.</p>');
-  if(page=='mine')return canWrite()?mine():(a.innerHTML='<p>Writers only.</p>');
-  if(page=='admin')return me?.role==='admin'?admin():(a.innerHTML='<p>Admins only.</p>');
+  if(page==='login')return login();
+  if(page==='post')return view(id);
+  if(page==='write')return canWrite()?write(id):(a.innerHTML='<h2>Writers only</h2><p>Ask the team leader to approve your email.</p>');
+  if(page==='mine')return canWrite()?mine():(a.innerHTML='<p>Writers only.</p>');
+  if(page==='admin')return me?.role==='admin'?admin():(a.innerHTML='<p>Admins only.</p>');
   home();
 }
 
@@ -99,8 +104,8 @@ async function write(id){
   <div id="ed" contenteditable="true">${clean(p.body)}</div>
   <div class="bar" style="margin-top:12px"><button class="alt" id="sd">Save draft</button><button class="pop" id="pb">Publish</button>${id?'<button class="alt" id="del">Delete</button>':''}</div><p id="m" class="msg"></p>`;
   
-  const save=async pub=>{
-    const row={title:('t').value.trim()||'Untitled',body:clean(('ed').innerHTML),published:pub};
+  const save=async pub => {
+    const row={title:\(('t').value.trim()\vert{}\vert{}'Untitled',body:clean(\)('ed').innerHTML),published:pub};
     const r=id?await db.from('posts').update(row).eq('id',id).select().single():await db.from('posts').insert({...row,author_id:me.id,author_name:me.name}).select().single();
     if(r.error)return \$('m').textContent=r.error.message;
     location.hash=pub?'#/post/'+r.data.id:'#/mine';
@@ -109,15 +114,14 @@ async function write(id){
   let saved=null;
   const keep=()=>{const s=getSelection();if(s.rangeCount&&\(('ed').contains(s.anchorNode))saved=s.getRangeAt(0)};   ['keyup','mouseup','blur'].forEach(e=>\)('ed').addEventListener(e,keep));
   
-  const pick=a=>{('fi').accept=a;('fi').click()};
-  ('ui').onclick=()=>pick('image/*');('uf').onclick=()=>pick('application/pdf');
-  ('ua').onclick=()=>('fi').removeAttribute('accept');\(('fi').click()};\)('fi').onchange=async()=>{
+  const pick=a=>{\(('fi').accept=a;\)('fi').click()};
+  \(('ui').onclick=()=>pick('image/*');\)('uf').onclick=()=>pick('application/pdf');
+  \(('ua').onclick=()=>{\)('fi').removeAttribute('accept');\(('fi').click()};\)('fi').onchange=async()=>{
     const f=\$('fi').files[0];
-    if(!f)return;
-    if(f.size>10*1024*1024)return \(('m').textContent='File too large — 10 MB max.';\)('m').textContent='Uploading…';
+    if(!f) return;
+    if(f.size>10*1024*1024) return \(('m').textContent='File too large — 10 MB max.';\)('m').textContent='Uploading…';
     
     const path=`${me.id}/${Date.now()}-${f.name.replace(/[^\w.-]/g,'_')}`;
-    
     const { data, error } = await db.storage
       .from('files')
       .upload(path, f, { cacheControl: '3600', upsert: true });
@@ -146,17 +150,17 @@ async function write(id){
     \$('m').textContent='Uploaded successfully!';
   };
 
-  ('sd').onclick=()=>save(false);('pb').onclick=()=>save(true);
+  \(('sd').onclick=()=>save(false);\)('pb').onclick=()=>save(true);
   
-  if(('del'))('del').onclick=async()=>{
-    if(confirm('Delete this post?')){
-      await db.from('posts').delete().eq('id',id);
-      location.hash='#/mine';
-    }
-  };
+  if(\(('del')) {\)('del').onclick=async()=>{
+      if(confirm('Delete this post?')){
+        await db.from('posts').delete().eq('id',id);
+        location.hash='#/mine';
+      }
+    };
+  }
 }
 
-// Fixed listener sync loop causing freeze
 db.auth.getSession().then(({data:{session}})=>{
   setUser(session).then(()=>{
     route();
